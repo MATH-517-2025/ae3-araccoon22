@@ -1,14 +1,201 @@
-.venv\---
-title: "MATH-517: Assignment x"
-author: "Your name"
-date: 'date of submission'
+---
+title: "MATH-517: Assignment 3"
+author: "Alexia Paratte"
+date: '2025-10-05'
 format: pdf
 editor: visual
 ---
 
-## Theoretical exercise
+## Theoretical Exercise {#sec-theory}
 
-Your answer goes here
+### Local Linear Regression as a Linear Smoother
+
+**Setup:**   We observe i.i.d. samples $(X_i,Y_i)$ from the model
+
+$$
+Y_i = m(X_i) + \varepsilon_i, \qquad i \in \{1,\dots,n\}
+$$
+
+and we estimate $m$ at a target point $x \in \mathbb{R}$ via the local linear estimator we defined in class:
+
+$$
+(\hat\beta_0(x), \hat\beta_1(x))
+= \arg\min_{\beta_0,\beta_1} \sum_{i=1}^n
+\Big(Y_i - \beta_0 - \beta_1(X_i-x)\Big)^2 \, K\!\left(\tfrac{X_i-x}{h}\right)
+$$
+
+where $K$ is a kernel and $h > 0$ a bandwidth. The fitted value is denoted $\hat m(x) = \hat\beta_0(x)$.
+
+We also define
+
+$$
+S_{n,k}(x) = \frac{1}{nh}\sum_{i=1}^n (X_i-x)^k K\!\left(\tfrac{X_i-x}{h}\right),
+\quad k \in \{0,1,2\}
+$$
+
+$$
+T_{n,k}(x) = \frac{1}{nh}\sum_{i=1}^n (X_i-x)^k K\!\left(\tfrac{X_i-x}{h}\right) Y_i,
+\quad k \in \{0,1\}
+$$
+
+$$
+K_i := K\!\left(\tfrac{X_i-x}{h}\right), \quad i=1,\dots,n
+$$
+
+and
+
+$$
+\Delta(x) = S_{n,0}(x) S_{n,2}(x) - S_{n,1}(x)^2
+$$
+
+---
+
+#### 1. Show that $\hat m(x)$ can be expressed as a weighted average of the observations
+
+Let
+
+$$
+X =
+\begin{bmatrix}
+1 & X_1 - x \\
+\vdots & \vdots \\
+1 & X_n - x
+\end{bmatrix}, \quad
+W = \mathrm{diag}(K_1,\dots,K_n), \quad
+y =
+\begin{bmatrix}
+Y_1 \\ \vdots \\ Y_n
+\end{bmatrix}
+$$
+
+By weighted least squares, we get
+
+$$
+\hat\beta =
+\begin{bmatrix}
+\hat\beta_0 \\ \hat\beta_1
+\end{bmatrix}
+= (X^\top W X)^{-1} X^\top W y
+$$
+
+Computation yields
+
+$$
+X^\top W X =
+\begin{bmatrix}
+\sum_i K_i & \sum_i (X_i-x) K_i \\
+\sum_i (X_i-x) K_i & \sum_i (X_i-x)^2 K_i
+\end{bmatrix}
+= nh \begin{bmatrix} S_{n,0} & S_{n,1} \\ S_{n,1} & S_{n,2} \end{bmatrix}
+$$
+
+$$
+X^\top W y =
+\begin{bmatrix}
+\sum_i K_i Y_i \\
+\sum_i (X_i-x) K_i Y_i
+\end{bmatrix}
+= nh \begin{bmatrix} T_{n,0} \\ T_{n,1} \end{bmatrix}
+$$
+
+Hence, with $\Delta = \Delta(x)$,
+
+$$
+(X^\top W X)^{-1}
+= \frac{1}{nh}\cdot \frac{1}{\Delta}
+\begin{bmatrix}
+S_{n,2} & -S_{n,1} \\
+-S_{n,1} & S_{n,0}
+\end{bmatrix}
+$$
+
+Therefore,
+
+$$
+\hat\beta = \frac{1}{\Delta}
+\begin{bmatrix}
+S_{n,2} & -S_{n,1} \\
+-S_{n,1} & S_{n,0}
+\end{bmatrix}
+\begin{bmatrix}
+T_{n,0} \\ T_{n,1}
+\end{bmatrix},
+\qquad
+\hat m(x) = \hat\beta_0(x) = \frac{S_{n,2} T_{n,0} - S_{n,1} T_{n,1}}{\Delta}
+$$
+
+Expanding $T_{n,0},T_{n,1}$ shows
+
+$$
+\hat m(x) = \sum_{i=1}^n w_{ni}(x) Y_i
+$$
+
+so $\hat m(x)$ is a linear smoother. $\square$
+
+---
+
+#### 2. Explicit weights $w_{ni}(x)$ {#sec-step-2}
+
+From the previous definitions and calculations:
+
+$$
+\hat m(x) =
+\frac{S_{n,2}\,\tfrac{1}{nh}\sum_i K_i Y_i
+- S_{n,1}\,\tfrac{1}{nh}\sum_i (X_i-x)K_i Y_i}{\Delta}
+= \sum_{i=1}^n \left[
+\frac{1}{nh}\cdot \frac{K_i\big(S_{n,2} - (X_i-x)S_{n,1}\big)}{\Delta}
+\right] Y_i
+$$
+
+Thus,
+
+$$
+\boxed{w_{ni}(x) = \frac{1}{nh}\,
+\frac{K\!\left(\tfrac{X_i-x}{h}\right)\big(S_{n,2}(x) - (X_i-x)S_{n,1}(x)\big)}
+{S_{n,0}(x)S_{n,2}(x) - S_{n,1}(x)^2}}
+$$
+
+These weights depend only on $x, X_i, K, h$ (not on the $Y_i$’s).
+
+---
+
+#### 3. Prove that $\sum_{i=1}^n w_{ni}(x) = 1$ {#sec-step-3}
+
+We sum the weights:
+
+$$
+\sum_{i=1}^n w_{ni}(x)
+= \frac{1}{nh}\cdot\frac{1}{\Delta}
+\left( S_{n,2}\sum_{i=1}^n K_i - S_{n,1}\sum_{i=1}^n (X_i-x)K_i \right).
+$$
+
+But
+
+$$
+\sum_i K_i = nh\,S_{n,0}, \qquad \sum_i (X_i-x)K_i = nh\,S_{n,1}.
+$$
+
+So,
+
+$$
+\sum_{i=1}^n w_{ni}(x)
+= \frac{1}{nh}\cdot \frac{1}{\Delta}
+\left( S_{n,2}\,(nh S_{n,0}) - S_{n,1}\,(nh S_{n,1}) \right)
+= \frac{S_{n,2}S_{n,0} - S_{n,1}^2}{\Delta} = \frac{\Delta}{\Delta} = 1 \quad \square
+$$ 
+
+---
+
+### Conclusion
+
+The local linear estimator can be written as
+
+$$
+\hat m(x) = \sum_{i=1}^n w_{ni}(x) Y_i,
+$$
+
+with weights $w_{ni}(x)$ given in Section 2. By Section 3, they sum to one and do not depend on the responses $Y_i$.
+
 
 ## Practical exercise
 
